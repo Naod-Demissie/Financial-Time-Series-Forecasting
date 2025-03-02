@@ -36,8 +36,8 @@ This project focuses on time series forecasting for financial assets, including 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Naod-Demissie/Financial-Fraud-Detection.git
-   cd Financial-Fraud-Detection
+   git clone https://github.com/Naod-Demissie/Financial-Time-Series-Forecasting.git
+   cd Financial-Time-Series-Forecasting
    ```
 
 2. Create a virtual environment and install dependencies:
