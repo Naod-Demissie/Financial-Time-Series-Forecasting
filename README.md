@@ -6,16 +6,21 @@ This project focuses on time series forecasting for financial assets, including 
 
 
 ```
+├── data
+│   ├── processed
+│   └── raw
 ├── logs
 ├── notebooks
 │   ├── 1.0-data-preprocessing.ipynb
 │   ├── 2.0-data-exploration.ipynb
+│   ├── 3.0-model-training.ipynb
 │   └── README.md
 ├── scripts
 │   ├── __init__.py
 │   ├── explore_data.py
 │   ├── preprocess_data.py
-│   ├── README.md
+│   ├── train_models.py
+│   └── README.md
 ├── src
 │   ├── __init__.py
 │   └── README.md
@@ -24,7 +29,6 @@ This project focuses on time series forecasting for financial assets, including 
 ├── checkpoints
 ├── README.md
 ├── requirements.txt
-├── Dockerfile
 ```
 
 
