@@ -1,5 +1,3 @@
-Here is the information you provided:  
-
 # Financial Time Series Forecasting  
 
 This project focuses on forecasting financial time series data using various machine learning models. The project is divided into multiple Jupyter notebooks, each handling different stages of the data processing and modeling pipeline.  
@@ -19,3 +17,8 @@ This notebook focuses on exploratory data analysis (EDA) to understand the data 
 - **Data Loading**: Loading the processed data from the previous notebook.  
 - **Exploratory Data Analysis**: Performing univariate and bivariate analysis to explore relationships between features and the target variable. This includes visualizations like histograms, box plots, and correlation matrices.  
 
+### `3.0-Model-Training.ipynb`  
+This notebook covers the training of various machine learning models:  
+- **Import Libraries**: Loading necessary libraries for model training.  
+- **Data Loading**: Loading the processed data.  
+- **Modeling**: Initializing and training classical machine learning models (Logistic Regression, Decision Tree, Random Forest, Gradient Boosting) and deep learning models (CNN, RNN, LSTM) on the processed data. Evaluating the performance of each model using appropriate metrics.  

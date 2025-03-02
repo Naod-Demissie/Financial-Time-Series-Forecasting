@@ -19,3 +19,11 @@ This script performs exploratory data analysis (EDA) on financial data:
 - **Outlier Detection**: Identifies and visualizes outliers in daily returns.  
 - **Seasonal Decomposition**: Decomposes time series data into trend, seasonal, and residual components.  
 - **Risk Analysis**: Computes risk metrics such as mean return, standard deviation, Value at Risk (VaR), and Sharpe ratio.  
+
+## `train_models.py`  
+This script trains classical machine learning models for financial forecasting:  
+- **Model Initialization**: Initializes MLflow tracking for experiment logging.  
+- **Load Data**: Loads training, validation, and test datasets.  
+- **Model Training**: Trains models such as Logistic Regression, Decision Tree, Random Forest, and Gradient Boosting.  
+- **Evaluation**: Evaluates model performance using metrics like confusion matrix, classification report, and accuracy score.  
+
