@@ -1,0 +1,14 @@
+ipykernel
+ipywidgets
+
+pandas
+numpy
+
+matplotlib
+seaborn
+
+yfinance
+pmdarima
+
+scipy
+scikit-learn
