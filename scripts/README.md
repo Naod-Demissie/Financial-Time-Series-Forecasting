@@ -37,3 +37,18 @@ This script uses the trained LSTM model to forecast stock prices:
 - **Analyze Trends**: Analyzes trends in the forecasted data.  
 - **Analyze Volatility**: Analyzes volatility and risk in the forecasted data.  
 - **Market Opportunities and Risks**: Outlines potential market opportunities and risks based on the forecasted data.  
+
+
+
+## `optimize_portfolio.py`  
+This script optimizes a financial portfolio based on the forecasted data:  
+- **Load LSTM Model**: Loads the pre-trained LSTM model.  
+- **Load Data**: Loads the stock data for TSLA, BND, and SPY from CSV files.  
+- **Forecast Prices**: Generates multi-step price forecasts using recursive forecasting.  
+- **Compute Returns**: Calculates daily log returns from the forecasted prices.  
+- **Compute Annual Return**: Computes annualized return for each asset.  
+- **Compute Covariance Matrix**: Computes the covariance matrix of asset returns.  
+- **Portfolio Performance**: Calculates portfolio return and volatility given weights.  
+- **Optimize Portfolio**: Finds optimal weights to maximize the Sharpe Ratio.  
+- **Visualize Portfolio Performance**: Visualizes portfolio performance over time.  
+- **Summary**: Summarizes expected return, volatility, Sharpe Ratio, and risk adjustments.

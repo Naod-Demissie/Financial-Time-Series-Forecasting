@@ -27,3 +27,9 @@ This notebook covers the training of various machine learning models:
 This notebook focuses on forecasting future values using the trained models:  
 - **Import Libraries**: Loading necessary libraries for forecasting.  
 - **Model Forecast**: Using the trained models to forecast future values for the financial time series data. This includes generating forecasts, plotting the forecasted values, and analyzing trends and volatility.
+
+
+### `5.0-Optimize-Portfolio.ipynb`  
+This notebook focuses on optimizing a financial portfolio based on the forecasted data:  
+- **Import Libraries**: Loading necessary libraries for portfolio optimization.  
+- **Optimize Portfolio**: Using the forecasted data to optimize the portfolio allocation. This includes calculating expected returns, covariance matrix, and optimizing the portfolio weights to maximize the Sharpe ratio.

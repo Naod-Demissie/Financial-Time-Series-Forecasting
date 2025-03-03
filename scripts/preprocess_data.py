@@ -9,7 +9,7 @@ class FinancialDataProcessor:
         """
         Initialize the data processor with asset tickers and a date range.
         """
-        self.tickers = atickers
+        self.tickers = tickers
         self.start_date = start_date
         self.end_date = end_date
         self.data = {}
