@@ -22,3 +22,8 @@ This notebook covers the training of various machine learning models:
 - **Import Libraries**: Loading necessary libraries for model training.  
 - **Data Loading**: Loading the processed data.  
 - **Modeling**: Initializing and training classical machine learning models (Logistic Regression, Decision Tree, Random Forest, Gradient Boosting) and deep learning models (CNN, RNN, LSTM) on the processed data. Evaluating the performance of each model using appropriate metrics.  
+
+### `4.0-Model-Forecast.ipynb`  
+This notebook focuses on forecasting future values using the trained models:  
+- **Import Libraries**: Loading necessary libraries for forecasting.  
+- **Model Forecast**: Using the trained models to forecast future values for the financial time series data. This includes generating forecasts, plotting the forecasted values, and analyzing trends and volatility.
