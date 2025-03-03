@@ -14,12 +14,14 @@ This project focuses on time series forecasting for financial assets, including 
 │   ├── 1.0-data-preprocessing.ipynb
 │   ├── 2.0-data-exploration.ipynb
 │   ├── 3.0-model-training.ipynb
+│   ├── 4.0-model-forcast.ipynb
 │   └── README.md
 ├── scripts
 │   ├── __init__.py
 │   ├── explore_data.py
 │   ├── preprocess_data.py
 │   ├── train_models.py
+│   ├── forcast.py
 │   └── README.md
 ├── src
 │   ├── __init__.py
