@@ -1,279 +1,179 @@
 import os
-import joblib
+import pandas as pd
 import numpy as np
+import yfinance as yf
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import mlflow
-import mlflow.sklearn
-import mlflow.tensorflow
+from IPython.display import display
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    mean_absolute_percentage_error,
+)
+from pmdarima import auto_arima
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv1D, LSTM, Dense, Flatten, Dropout, SimpleRNN
-from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
 
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
-
-
-class ClassicalModelTrainer:
-    """Trainer for classical machine learning models with MLflow tracking."""
-
-    def __init__(self):
-        """Initialize MLflow tracking URI and print initialization message."""
-        self.mlflow_tracking_uri = "./mlruns"
-        mlflow.set_tracking_uri(self.mlflow_tracking_uri)
-        print("Initialized ModelTrainer with MLflow tracking.")
-
-    def load_data(self, dataset_name):
-        """Load train, validation, and test datasets from processed files."""
-        print(f"Loading {dataset_name} dataset...")
-        self.X_train = np.load(
-            f"../data/processed/{dataset_name}_X_train.npy", allow_pickle=True
+class TimeSeriesForecaster:
+    def __init__(
+        self, file_path, model_type="ARIMA", p=1, d=1, q=1, seasonal_order=(1, 1, 1, 12)
+    ):
+        self.file_path = file_path
+        self.model_type = model_type
+        self.p, self.d, self.q = p, d, q
+        self.seasonal_order = seasonal_order
+        self.model = None
+        self.data = None
+        self.train_data = None
+        self.test_data = None
+        self.checkpoint_dir = (
+            "/content/drive/MyDrive/10 acadamy/W11 Challenge/checkpoints"
         )
-        self.X_val = np.load(
-            f"../data/processed/{dataset_name}_X_val.npy", allow_pickle=True
-        )
-        self.X_test = np.load(
-            f"../data/processed/{dataset_name}_X_test.npy", allow_pickle=True
-        )
-        self.y_train = np.load(
-            f"../data/processed/{dataset_name}_y_train.npy", allow_pickle=True
-        )
-        self.y_val = np.load(
-            f"../data/processed/{dataset_name}_y_val.npy", allow_pickle=True
-        )
-        self.y_test = np.load(
-            f"../data/processed/{dataset_name}_y_test.npy", allow_pickle=True
-        )
+        self.log_dir = "/content/drive/MyDrive/10 acadamy/W11 Challenge/logs/"
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        os.makedirs(self.log_dir, exist_ok=True)
+        print(f"Initializing {model_type} model with params: p={p}, d={d}, q={q}")
 
-        print(f"Shapes of loaded data for {dataset_name}:")
-        print(f"X_train: {self.X_train.shape}, y_train: {self.y_train.shape}")
-        print(f"X_val: {self.X_val.shape}, y_val: {self.y_val.shape}")
-        print(f"X_test: {self.X_test.shape}, y_test: {self.y_test.shape}")
+    def load_data(self):
+        print(f"Loading data from {self.file_path}...")
+        self.data = pd.read_csv(self.file_path, parse_dates=["Date"], index_col="Date")
+        print("Data loaded successfully!")
+        display(self.data.head())
 
-    def train_model(self, model_type, dataset_name):
-        """Train a specified model type on the given dataset and save the best model."""
-        self.load_data(dataset_name)
-        models = {
-            "Logistic Regression": LogisticRegression(),
-            "Decision Tree": DecisionTreeClassifier(),
-            "Random Forest": RandomForestClassifier(),
-            "Gradient Boosting": GradientBoostingClassifier(),
-        }
+    def train_test_split(self, train_size=0.7, val_size=0.15):
+        train_end = int(len(self.data) * train_size)
+        val_end = train_end + int(len(self.data) * val_size)
 
-        if model_type not in models:
-            raise ValueError(
-                "Invalid model type. Choose from Logistic Regression, Decision Tree, Random Forest, Gradient Boosting."
-            )
-
-        model = models[model_type]
-
-        print(f"Training {model_type} on {dataset_name} dataset...")
-        model.fit(self.X_train, self.y_train)
-
-        model_path = (
-            f"../checkpoints/best_{model_type.replace(' ', '_')}_{dataset_name}.joblib"
-        )
-        joblib.dump(model, model_path)
-        print(f"Model saved as {model_path}")
-
-        mlflow.sklearn.log_model(model, f"{model_type}_model_{dataset_name}")
-
-    def evaluate_model(self, model_type, dataset_name):
-        """Evaluate the trained model on validation and test sets with performance metrics."""
-        model_path = (
-            f"../checkpoints/best_{model_type.replace(' ', '_')}_{dataset_name}.joblib"
-        )
-        model = joblib.load(model_path)
-        print(f"Loaded model from {model_path}")
-
-        for dataset, X, y in zip(
-            ["Validation", "Test"], [self.X_val, self.X_test], [self.y_val, self.y_test]
-        ):
-            print(f"Evaluating on {dataset} set...")
-            y_pred = model.predict(X)
-            accuracy = accuracy_score(y, y_pred)
-            print(f"Accuracy on {dataset} set: {accuracy:.4f}")
-            cm = confusion_matrix(y, y_pred)
-            self.plot_confusion_matrix(cm, model_type, dataset)
-            print(classification_report(y, y_pred))
-
-    def plot_confusion_matrix(self, cm, model_name, dataset):
-        """Plot and display the confusion matrix for model evaluation."""
-        plt.figure(figsize=(6, 4))
-        sns.heatmap(
-            cm,
-            annot=True,
-            fmt="d",
-            cmap="Blues",
-            xticklabels=["Non-fraudulent", "Fraudulent"],
-            yticklabels=["Non-fraudulent", "Fraudulent"],
-        )
-        plt.xlabel("Predicted")
-        plt.ylabel("Actual")
-        plt.title(f"Confusion Matrix - {model_name} on {dataset} set")
-        plt.show()
-
-
-class DeepModelTrainer:
-    """
-    Trainer class for deep learning models, supporting CNN, RNN, and LSTM architectures.
-    Handles data loading, model initialization, training, evaluation, and performance visualization.
-    """
-
-    def __init__(self):
-        """Initialize the trainer and set up MLflow tracking."""
-        self.mlflow_tracking_uri = "./mlruns"
-        mlflow.set_tracking_uri(self.mlflow_tracking_uri)
-        print("Initialized DeepModelTrainer with MLflow tracking.")
-
-    def load_data(self, dataset_name):
-        """Load dataset from preprocessed .npy files and store in class attributes."""
-        print(f"Loading {dataset_name} dataset...")
-        self.X_train = np.load(
-            f"../data/processed/{dataset_name}_X_train.npy", allow_pickle=True
-        )
-        self.X_val = np.load(
-            f"../data/processed/{dataset_name}_X_val.npy", allow_pickle=True
-        )
-        self.X_test = np.load(
-            f"../data/processed/{dataset_name}_X_test.npy", allow_pickle=True
-        )
-        self.y_train = np.load(
-            f"../data/processed/{dataset_name}_y_train.npy", allow_pickle=True
-        )
-        self.y_val = np.load(
-            f"../data/processed/{dataset_name}_y_val.npy", allow_pickle=True
-        )
-        self.y_test = np.load(
-            f"../data/processed/{dataset_name}_y_test.npy", allow_pickle=True
-        )
-
-        print(f"Shapes of loaded data for {dataset_name}:")
-        print(f"X_train: {self.X_train.shape}, y_train: {self.y_train.shape}")
-        print(f"X_val: {self.X_val.shape}, y_val: {self.y_val.shape}")
-        print(f"X_test: {self.X_test.shape}, y_test: {self.y_test.shape}")
-
-    def initialize_model(self, model_type, dataset_name):
-        """Initialize a deep learning model of type CNN, RNN, or LSTM based on the dataset."""
-        self.load_data(dataset_name)
-        input_shape = (self.X_train.shape[1], 1)
-
-        if model_type == "CNN":
-            model = Sequential(
-                [
-                    Conv1D(
-                        32, kernel_size=3, activation="relu", input_shape=input_shape
-                    ),
-                    Flatten(),
-                    Dense(64, activation="relu"),
-                    Dense(1, activation="sigmoid"),
-                ]
-            )
-        elif model_type == "RNN":
-            model = Sequential(
-                [
-                    SimpleRNN(32, activation="relu", input_shape=input_shape),
-                    Dense(64, activation="relu"),
-                    Dense(1, activation="sigmoid"),
-                ]
-            )
-        elif model_type == "LSTM":
-            model = Sequential(
-                [
-                    LSTM(32, activation="relu", input_shape=input_shape),
-                    Dense(64, activation="relu"),
-                    Dense(1, activation="sigmoid"),
-                ]
-            )
-        else:
-            raise ValueError("Invalid model type. Choose from CNN, RNN, or LSTM.")
-
-        model.compile(
-            optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
-        )
-        return model
-
-    def train_model(self, model, model_type, dataset_name):
-        """Train the specified deep learning model and save the best performing checkpoint."""
-        self.X_train = self.X_train.reshape(-1, self.X_train.shape[1], 1)
-        self.X_val = self.X_val.reshape(-1, self.X_val.shape[1], 1)
-
-        checkpoint_path = f"../checkpoints/best_{model_type}_{dataset_name}.h5"
-        checkpoint = ModelCheckpoint(
-            checkpoint_path,
-            monitor="val_accuracy",
-            save_best_only=True,
-            mode="max",
-            verbose=1,
-        )
-
-        history = model.fit(
-            self.X_train,
-            self.y_train,
-            epochs=6,
-            validation_data=(self.X_val, self.y_val),
-            callbacks=[checkpoint],
-            verbose=1,
-        )
-
-        self.plot_training_progress(history, model_type, dataset_name)
-        return model
-
-    def evaluate_model(self, model, dataset_name):
-        """Evaluate the trained model using the test dataset and display performance metrics."""
-        self.X_test = self.X_test.reshape(-1, self.X_test.shape[1], 1)
-        y_pred = model.predict(self.X_test)
-        y_pred = y_pred > 0.5  # Converting probabilities to binary labels
-
-        # Compute confusion matrix
-        cm = confusion_matrix(self.y_test, y_pred)
-
-        # Plot confusion matrix
-        plt.figure(figsize=(3.5, 3))
-        sns.heatmap(
-            cm,
-            annot=True,
-            fmt="g",
-            cmap="Blues",
-            cbar=False,
-            xticklabels=["Non-fraudulent", "Fraudulent"],
-            yticklabels=["Non-fraudulent", "Fraudulent"],
-        )
-        plt.title(f"Confusion Matrix for {dataset_name}")
-        plt.xlabel("Predicted Labels")
-        plt.ylabel("True Labels")
-        plt.show()
-
-        # Print classification report and accuracy score
-        print(f"Classification Report for {dataset_name}:")
-        print(classification_report(self.y_test, y_pred))
+        self.train_data = self.data.iloc[:train_end]
+        self.val_data = self.data.iloc[train_end:val_end]
+        self.test_data = self.data.iloc[val_end:]
 
         print(
-            f"Accuracy Score for {dataset_name}: {accuracy_score(self.y_test, y_pred)}"
+            f"Training size: {len(self.train_data)}, Validation size: {len(self.val_data)}, Testing size: {len(self.test_data)}"
         )
 
-    def plot_training_progress(self, history, model_type, dataset_name):
-        """Plot training accuracy and loss curves over epochs."""
-        plt.figure(figsize=(10, 4))
-        plt.subplot(1, 2, 1)
-        plt.plot(history.history["accuracy"], label="Train Accuracy")
-        plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
-        plt.title(f"{model_type} Accuracy on {dataset_name}")
-        plt.legend()
+    def optimize_parameters(self):
+        print("Optimizing ARIMA parameters using auto_arima...")
+        auto_model = auto_arima(
+            self.train_data["Close"], seasonal=True, trace=True, stepwise=True
+        )
+        self.p, self.d, self.q = auto_model.order
+        self.seasonal_order = auto_model.seasonal_order
+        print(
+            f"Optimal Parameters Found: p={self.p}, d={self.d}, q={self.q}, seasonal_order={self.seasonal_order}"
+        )
 
-        plt.subplot(1, 2, 2)
-        plt.plot(history.history["loss"], label="Train Loss")
-        plt.plot(history.history["val_loss"], label="Validation Loss")
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-        plt.title(f"{model_type} Loss on {dataset_name}")
-        plt.legend()
+    def _train_lstm(self):
+        seq_length = 10
+        X_train, y_train = self._prepare_lstm_data(self.train_data["Close"], seq_length)
 
+        self.model = Sequential(
+            [
+                LSTM(
+                    50,
+                    activation="relu",
+                    return_sequences=True,
+                    input_shape=(seq_length, 1),
+                ),
+                LSTM(50, activation="relu"),
+                Dense(1),
+            ]
+        )
+
+        checkpoint_cb = ModelCheckpoint(
+            filepath=os.path.join(self.checkpoint_dir, "lstm_best.h5"),
+            save_best_only=True,
+            monitor="loss",
+            mode="min",
+        )
+        tensorboard_cb = TensorBoard(log_dir=self.log_dir)
+
+        self.model.compile(optimizer=Adam(learning_rate=0.001), loss="mse")
+        self.model.fit(
+            X_train,
+            y_train,
+            epochs=20,
+            batch_size=16,
+            verbose=1,
+            callbacks=[checkpoint_cb, tensorboard_cb],
+        )
+
+    def _prepare_lstm_data(self, series, seq_length):
+        X, y = [], []
+        series = series.values.reshape(-1, 1)
+        for i in range(len(series) - seq_length):
+            X.append(series[i : i + seq_length])
+            y.append(series[i + seq_length])
+        return np.array(X), np.array(y)
+
+    def train_model(self):
+        if self.model_type == "ARIMA":
+            print("Training ARIMA model...")
+            self.model = ARIMA(
+                self.train_data["Close"], order=(self.p, self.d, self.q)
+            ).fit()
+        elif self.model_type == "SARIMA":
+            print("Training SARIMA model...")
+            self.model = SARIMAX(
+                self.train_data["Close"],
+                order=(self.p, self.d, self.q),
+                seasonal_order=self.seasonal_order,
+            ).fit()
+        elif self.model_type == "LSTM":
+            print("Training LSTM model...")
+            self._train_lstm()
+        else:
+            raise ValueError("Invalid model type. Choose 'ARIMA', 'SARIMA', or 'LSTM'.")
+
+        checkpoint_path = os.path.join(
+            self.checkpoint_dir, f"{self.model_type}_model.h5"
+        )
+        print(f"Saving model checkpoint to {checkpoint_path}")
+        self.model.save(checkpoint_path)
+        print("Model training complete!")
+
+    def forecast(self, steps=30):
+        print(f"Forecasting next {steps} steps...")
+        if self.model_type in ["ARIMA", "SARIMA"]:
+            forecast_values = self.model.forecast(steps=steps)
+        elif self.model_type == "LSTM":
+            forecast_values = self._predict_lstm(steps)
+        print("Forecasting complete!")
+        return forecast_values
+
+    def _predict_lstm(self, steps):
+        seq_length = 10
+        data_series = self.train_data["Close"].values[-seq_length:].reshape(-1, 1)
+        predictions = []
+        for _ in range(steps):
+            input_data = np.array(data_series[-seq_length:]).reshape(1, seq_length, 1)
+            next_step = self.model.predict(input_data)[0, 0]
+            predictions.append(next_step)
+            data_series = np.append(data_series, [[next_step]], axis=0)
+        return predictions
+
+    def evaluate_model(self):
+        print("Evaluating model...")
+        predictions = self.forecast(len(self.test_data))
+        mae = mean_absolute_error(self.test_data["Close"], predictions)
+        rmse = mean_squared_error(self.test_data["Close"], predictions)
+        mape = mean_absolute_percentage_error(self.test_data["Close"], predictions)
+        print(f"MAE: {mae:.4f}, RMSE: {rmse:.4f}, MAPE: {mape:.4f}")
+        return mae, rmse, mape
+
+    def plot_forecast(self):
+        predictions = self.forecast(len(self.test_data))
+        plt.figure(figsize=(10, 5))
+        plt.plot(self.data.index, self.data["Close"], label="Actual")
+        plt.plot(
+            self.test_data.index, predictions, label="Forecast", linestyle="dashed"
+        )
+        plt.legend()
+        plt.title(f"{self.model_type} Forecast vs Actual")
         plt.show()
