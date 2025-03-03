@@ -27,3 +27,13 @@ This script trains classical machine learning models for financial forecasting:
 - **Model Training**: Trains models such as Logistic Regression, Decision Tree, Random Forest, and Gradient Boosting.  
 - **Evaluation**: Evaluates model performance using metrics like confusion matrix, classification report, and accuracy score.  
 
+
+## `forcast.py`  
+This script uses the trained LSTM model to forecast stock prices:  
+- **Load LSTM Model**: Loads the pre-trained LSTM model.  
+- **Load Data**: Loads the stock data from CSV files.  
+- **Forecast**: Generates forecasts for the specified number of months ahead.  
+- **Plot Forecast**: Plots the historical data along with the forecasted values.  
+- **Analyze Trends**: Analyzes trends in the forecasted data.  
+- **Analyze Volatility**: Analyzes volatility and risk in the forecasted data.  
+- **Market Opportunities and Risks**: Outlines potential market opportunities and risks based on the forecasted data.  
